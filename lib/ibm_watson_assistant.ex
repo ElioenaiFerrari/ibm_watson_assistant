@@ -7,7 +7,7 @@ defmodule IbmWatsonAssistant do
    ```elixir
   #  application.ex
   children = [
-    {IbmWatsonAssistant, id: "", external_ref_id: "", url: "", version: "", api_key: "", }
+    {IbmWatsonAssistant, id: "", environment_id: "", url: "", version: "", api_key: "", }
   ]
    ```
   """
@@ -18,13 +18,13 @@ defmodule IbmWatsonAssistant do
     IamAuth.start_link(config)
 
     id = Keyword.fetch!(config, :id)
-    external_ref_id = Keyword.fetch!(config, :external_ref_id)
+    environment_id = Keyword.fetch!(config, :environment_id)
     url = Keyword.fetch!(config, :url)
     version = Keyword.fetch!(config, :version)
     access_token = IamAuth.get_token()
 
     middleware = [
-      {Tesla.Middleware.BaseUrl, "#{url}/v2/assistants/#{external_ref_id}"},
+      {Tesla.Middleware.BaseUrl, "#{url}/v2/assistants/#{environment_id}"},
       Tesla.Middleware.JSON,
       {Tesla.Middleware.BearerAuth, token: access_token}
     ]
@@ -103,6 +103,21 @@ defmodule IbmWatsonAssistant do
              |> Map.fetch!("text"),
              context
            }, state}
+
+        {:ok,
+         %Tesla.Env{
+           body: %{"error" => _} = body
+         }} ->
+          IO.inspect(body)
+
+          {
+            :reply,
+            {
+              "Desculpe, ocorreu um erro interno ao tentar acessar o recurso que você solicitou. Por favor, entre em contato com nossa equipe de suporte para que possamos ajudá-lo a resolver o problema. Obrigado pela sua compreensão!",
+              %{}
+            },
+            state
+          }
 
         {:error, _} ->
           {
